@@ -185,19 +185,19 @@ public final class RgbUtils {
     public static double[] rgbToHwb(final double red, final double green, final double blue) {
         checkRgbToHwbArguments(red, green, blue);
         final var epsilon = 1 / 100000.0d;
-        var hue = rgbToHue(red, green, blue);
-        final var white = Math.min(Math.min(red, green), blue);
-        final var black = 1 - Math.max(Math.max(red, green), blue);
-        if (white + black >= 1 - epsilon) {
-            hue = Double.NaN;
+        var h = rgbToHue(red, green, blue);
+        final var w = Math.min(Math.min(red, green), blue);
+        final var b = 1 - Math.max(Math.max(red, green), blue);
+        if (w + b >= 1 - epsilon) {
+            h = Double.NaN;
         }
-        assert hue >= HwbConstants.MIN_HUE;
-        assert hue <= HwbConstants.MAX_HUE;
-        assert white >= HwbConstants.MIN_WHITENESS;
-        assert white <= HwbConstants.MAX_WHITENESS;
-        assert black >= HwbConstants.MIN_BLACKNESS;
-        assert black <= HwbConstants.MAX_BLACKNESS;
-        return new double[] {hue, white, black};
+        assert h >= HwbConstants.MIN_HUE;
+        assert h <= HwbConstants.MAX_HUE;
+        assert w >= HwbConstants.MIN_WHITENESS;
+        assert w <= HwbConstants.MAX_WHITENESS;
+        assert b >= HwbConstants.MIN_BLACKNESS;
+        assert b <= HwbConstants.MAX_BLACKNESS;
+        return new double[] {h, w, b};
     }
 
     /**
