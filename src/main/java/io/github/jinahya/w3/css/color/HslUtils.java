@@ -84,20 +84,12 @@ public final class HslUtils {
      *         lightness,  // [0..100]
      *         DoubleBuffer.allocate(3)
      * );
-     *
      * final var r = buffer.get(0);
      * final var g = buffer.get(1);
      * final var b = buffer.get(2);
      * assert r >= 0.0d && r <= 1.0d;
      * assert g >= 0.0d && g <= 1.0d;
      * assert b >= 0.0d && b <= 1.0d;
-     *
-     * final var   red = Math.round(r * 255);
-     * final var green = Math.round(g * 255);
-     * final var  blue = Math.round(b * 255);
-     * assert   red >= 0 &&   red <= 255;
-     * assert green >= 0 && green <= 255;
-     * assert  blue >= 0 &&  blue <= 255;
      *}
      *
      * @param hue        a value of {@code hue} between {@value HslConstants#MIN_HUE} and {@value HslConstants#MAX_HUE},
