@@ -134,18 +134,6 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <!--      <dependency>-->
-      <!--        <groupId>org.mockito</groupId>-->
-      <!--        <artifactId>mockito-junit-jupiter</artifactId>-->
-      <!--        <version>${version.org.mockito}</version>-->
-      <!--        <scope>test</scope>-->
-      <!--        <exclusions>-->
-      <!--          <exclusion>&lt;!&ndash; dependencyConvergence &ndash;&gt;-->
-      <!--            <groupId>org.junit.jupiter</groupId>-->
-      <!--            <artifactId>junit-jupiter-api</artifactId>-->
-      <!--          </exclusion>-->
-      <!--        </exclusions>-->
-      <!--      </dependency>-->
       <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
@@ -173,6 +161,17 @@
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion><!-- dependencyConvergence -->
+          <groupId>org.junit.jupiter</groupId>
+          <artifactId>junit-jupiter-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

@@ -1,14 +1,23 @@
 package io.github.jinahya.w3.css.color;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 
+import java.nio.DoubleBuffer;
 import java.util.stream.Stream;
 
+import static io.github.jinahya.w3.css.color.HslUtils.hslToRgbArray;
+import static io.github.jinahya.w3.css.color.HslUtils.hslToRgbBuffer;
+import static io.github.jinahya.w3.css.color.HslUtils.hslToRgbFunction;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.withSettings;
 
 @Slf4j
 class HslUtilsTest {
@@ -36,38 +45,94 @@ class HslUtilsTest {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Test
-    void hslToRgb_000_() {
-        HslUtils.hslToRgb(
-                0, 0, 0,
-                r -> g -> b -> {
-                    assertThat(r).isZero();
-                    assertThat(g).isZero();
-                    assertThat(b).isZero();
-                    return null;
-                }
+    @MethodSource({"hslAndRgb"})
+    @ParameterizedTest(name = "[{index}]: {0}, {1}%, {2}% -> {3}, {4}, {5}")
+    void hslToRgbBuffer__(final double hue, final double saturation, final double lightness,
+                          final int red, final int green, final int blue) {
+        final var buffer = hslToRgbBuffer(
+                hue,
+                saturation,
+                lightness,
+                DoubleBuffer.allocate(3)
         );
+        final var r = buffer.get(0);
+        final var g = buffer.get(1);
+        final var b = buffer.get(2);
+        assertThat(Math.round(r * RgbConstants.MAX_COMPONENT))
+                .as("r")
+                .isEqualTo(red);
+        assertThat(Math.round(g * RgbConstants.MAX_COMPONENT))
+                .as("g")
+                .isEqualTo(green);
+        assertThat(Math.round(b * RgbConstants.MAX_COMPONENT))
+                .as("b")
+                .isEqualTo(blue);
     }
 
     @MethodSource({"hslAndRgb"})
     @ParameterizedTest(name = "[{index}]: {0}, {1}%, {2}% -> {3}, {4}, {5}")
-    void hslToRgb__(final int hue, final int saturation, final int lightness,
-                    final int red, final int green, final int blue) {
-        HslUtils.hslToRgb(
-                hue, saturation, lightness,
-                r -> g -> b -> {
-                    log.info("r: {}, g: {}, b:{}", r, g, b);
-                    assertThat(Math.round(r * RgbConstants.MAX_COMPONENT))
-                            .as("r")
-                            .isEqualTo(red);
-                    assertThat(Math.round(g * RgbConstants.MAX_COMPONENT))
-                            .as("g")
-                            .isEqualTo(green);
-                    assertThat(Math.round(b * RgbConstants.MAX_COMPONENT))
-                            .as("b")
-                            .isEqualTo(blue);
-                    return null;
-                }
-        );
+    void hslToRgbFunction__(final double hue, final double saturation, final double lightness,
+                            final int red, final int green, final int blue) {
+        try (var mockStatic = mockStatic(HslUtils.class, withSettings().defaultAnswer(CALLS_REAL_METHODS))) {
+            final var rgb = hslToRgbFunction(
+                    hue,
+                    saturation,
+                    lightness,
+                    r -> g -> b -> DoubleBuffer.allocate(3).put(r).put(g).put(b)
+            );
+            final var bufferCaptor = ArgumentCaptor.forClass(DoubleBuffer.class);
+            mockStatic.verify(
+                    () -> hslToRgbBuffer(eq(hue), eq(saturation), eq(lightness), bufferCaptor.capture()),
+                    times(1)
+            );
+            final var buffer = bufferCaptor.getValue();
+            assertThat(buffer).isNotNull().satisfies(b -> {
+                assertThat(b.capacity()).isEqualTo(3);
+                assertThat(b.hasRemaining()).isFalse();
+                assertThat(b.array()).isEqualTo(rgb.array());
+            });
+            assertThat(Math.round(buffer.get(0) * RgbConstants.MAX_COMPONENT))
+                    .as("r")
+                    .isEqualTo(red);
+            assertThat(Math.round(buffer.get(1) * RgbConstants.MAX_COMPONENT))
+                    .as("g")
+                    .isEqualTo(green);
+            assertThat(Math.round(buffer.get(2) * RgbConstants.MAX_COMPONENT))
+                    .as("b")
+                    .isEqualTo(blue);
+        }
+    }
+
+    @MethodSource({"hslAndRgb"})
+    @ParameterizedTest(name = "[{index}]: {0}, {1}%, {2}% -> {3}, {4}, {5}")
+    void hslToRgbArray__(final double hue, final double saturation, final double lightness,
+                         final int red, final int green, final int blue) {
+        try (var mockStatic = mockStatic(HslUtils.class, withSettings().defaultAnswer(CALLS_REAL_METHODS))) {
+            final var rgb = hslToRgbArray(
+                    hue,
+                    saturation,
+                    lightness
+            );
+            final var bufferCaptor = ArgumentCaptor.forClass(DoubleBuffer.class);
+            mockStatic.verify(
+                    () -> hslToRgbBuffer(eq(hue), eq(saturation), eq(lightness), bufferCaptor.capture()),
+                    times(1)
+            );
+            final var buffer = bufferCaptor.getValue();
+            assertThat(buffer).isNotNull().satisfies(b -> {
+                assertThat(b.capacity()).isEqualTo(3);
+                assertThat(b.hasRemaining()).isFalse();
+                assertThat(b.array()).isEqualTo(rgb);
+            });
+            assertThat(Math.round(buffer.get(0) * RgbConstants.MAX_COMPONENT))
+                    .as("r")
+                    .isEqualTo(red);
+            assertThat(Math.round(buffer.get(1) * RgbConstants.MAX_COMPONENT))
+                    .as("g")
+                    .isEqualTo(green);
+            assertThat(Math.round(buffer.get(2) * RgbConstants.MAX_COMPONENT))
+                    .as("b")
+                    .isEqualTo(blue);
+        }
     }
 }
