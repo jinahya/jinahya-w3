@@ -119,7 +119,6 @@ public final class RgbUtils {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-
     private static void checkRgbToHwbArguments(final double red, final double green, final double blue) {
         if (red < RgbConstants.MIN_NORMALIZED_COMPONENT || red > RgbConstants.MAX_NORMALIZED_COMPONENT) {
             throw new IllegalArgumentException("red: " + red);
@@ -133,33 +132,34 @@ public final class RgbUtils {
     }
 
     /**
-     * .
+     * Calculates {@code hue} color component from specified RGB color components.
      *
-     * @param red   Red component 0..1
-     * @param green Green component 0..1
-     * @param blue  Blue component 0..1
-     * @return hue as degrees 0..360
+     * @param red   red.
+     * @param green green.
+     * @param blue  blue.
+     * @return a value of {@code hue} as degrees of {@code [0..360]} or the {@link Double#NaN} which means that the
+     * color is considered achromatic(grayscale).
      */
     // https://www.w3.org/TR/css-color-4/#rgb-to-hwb
-    private static double rgbToHue(final double red, final double green, final double blue) {
+    static double rgbToHue(final double red, final double green, final double blue) {
         assert red >= RgbConstants.MIN_NORMALIZED_COMPONENT;
         assert red <= RgbConstants.MAX_NORMALIZED_COMPONENT;
         assert green >= RgbConstants.MIN_NORMALIZED_COMPONENT;
         assert green <= RgbConstants.MAX_NORMALIZED_COMPONENT;
         assert blue >= RgbConstants.MIN_NORMALIZED_COMPONENT;
-        assert blue <= RgbConstants.MIN_NORMALIZED_COMPONENT;
+        assert blue <= RgbConstants.MAX_NORMALIZED_COMPONENT;
         final var max = Math.max(red, Math.max(green, blue));
         final var min = Math.min(red, Math.min(green, blue));
         double hue = Double.NaN;
         final var d = max - min;
         if (d != 0) {
             if (max == red) {
-                hue = (int) ((green - blue) / d + (green < blue ? 6 : 0));
+                hue = (green - blue) / d + (green < blue ? 6 : 0);
             } else if (max == green) {
-                hue = (int) ((blue - red) / d + 2);
+                hue = (blue - red) / d + 2;
             } else {
                 assert max == blue;
-                hue = (int) ((red - green) / d + 4);
+                hue = (red - green) / d + 4;
             }
             hue *= 60;
         }
@@ -170,8 +170,7 @@ public final class RgbUtils {
     }
 
     /**
-     * Put HWB color components, converted from specified RGB color components, to the specified buffer, and returns the
-     * buffer.
+     * Returns an array of HWB color components, converted from specified RGB color components.
      *
      * @param red   a value of {@code red} component between {@value RgbConstants#MIN_NORMALIZED_COMPONENT} and
      *              {@value RgbConstants#MAX_NORMALIZED_COMPONENT}, both inclusive.
@@ -179,8 +178,12 @@ public final class RgbUtils {
      *              {@value RgbConstants#MAX_NORMALIZED_COMPONENT}, both inclusive.
      * @param blue  a value of {@code blue} component between {@value RgbConstants#MIN_NORMALIZED_COMPONENT} and
      *              {@value RgbConstants#MAX_NORMALIZED_COMPONENT}, both inclusive.
-     * @return an array of {@code hue}({@code [0..360]}, {@code whiteness}({@code [0..100]}, and
-     * {@code blackness}{@code [0..100]}.
+     * @return an array of {@code hue}({@code [0..360] or {@link Double#NaN}}), {@code whiteness}({@code [0..100]}), and
+     * {@code blackness}({@code [0..100]}).
+     * @apiNote Note that the {@code hue}(the first element of the returned array) may be the {@link Double#NaN} which
+     * means that the color is considered achromatic(grayscale).
+     * @see <a href="https://www.w3.org/TR/css-color-4/#rgb-to-hwb">8.2. Converting sRGB Colors to HWB</a> (CSS Color
+     * Module Level 4, W3C Candidate Recommendation Draft, 24 April 2025)
      */
     public static double[] rgbToHwb(final double red, final double green, final double blue) {
         checkRgbToHwbArguments(red, green, blue);
@@ -191,18 +194,12 @@ public final class RgbUtils {
         if (w + b >= 1 - epsilon) {
             h = Double.NaN;
         }
-        assert h >= HwbConstants.MIN_HUE;
-        assert h <= HwbConstants.MAX_HUE;
-        assert w >= HwbConstants.MIN_WHITENESS;
-        assert w <= HwbConstants.MAX_WHITENESS;
-        assert b >= HwbConstants.MIN_BLACKNESS;
-        assert b <= HwbConstants.MAX_BLACKNESS;
-        return new double[] {h, w, b};
+        return new double[] {h, w * 100, b * 100};
     }
 
     /**
-     * Put HWB color components, converted from specified RGB color components, to the specified buffer, and returns the
-     * buffer.
+     * Puts HWB color components, converted from specified RGB color components, to the specified buffer, and returns
+     * the buffer.
      *
      * @param red    a value of {@code red} component between {@value RgbConstants#MIN_NORMALIZED_COMPONENT} and
      *               {@value RgbConstants#MAX_NORMALIZED_COMPONENT}, both inclusive.
@@ -211,9 +208,10 @@ public final class RgbUtils {
      * @param blue   a value of {@code blue} component between {@value RgbConstants#MIN_NORMALIZED_COMPONENT} and
      *               {@value RgbConstants#MAX_NORMALIZED_COMPONENT}, both inclusive.
      * @param buffer the function.
-     * @return given {@code buffer} put with {@code hue}({@code [0..360]}, {@code whiteness}({@code [0..100]}, and
-     * {@code blackness}{@code [0..100]}.
-     * @see DoubleBuffer#put(double)
+     * @return given {@code buffer} put with {@code hue}({@code [0..360]} or {@link Double#NaN}),
+     * {@code whiteness}({@code [0..100]}), and {@code blackness}({@code [0..100]}).
+     * @see #rgbToHwb(double, double, double)
+     * @see DoubleBuffer#put(double[])
      */
     @SuppressWarnings("unchecked")
     public static <T extends DoubleBuffer> T rgbToHwb(final double red, final double green, final double blue,
@@ -235,8 +233,8 @@ public final class RgbUtils {
      *                 {@value RgbConstants#MAX_NORMALIZED_COMPONENT}, both inclusive.
      * @param function the function.
      * @param <R>      result type parameter
-     * @return the result of the {@code function} applied, in currying, with {@code hue}({@code [0..360]},
-     * {@code whiteness}({@code [0..100]}, and {@code blackness}{@code [0..100]}.
+     * @return the result of the {@code function} applied, in currying, with {@code hue}({@code [0..360]} or
+     * {@link Double#NaN}), {@code whiteness}({@code [0..100]}), and {@code blackness}({@code [0..100]}).
      */
     // https://www.w3.org/TR/css-color-4/#rgb-to-hwb
     public static <R> R rgbToHwb(final double red, final double green, final double blue,
