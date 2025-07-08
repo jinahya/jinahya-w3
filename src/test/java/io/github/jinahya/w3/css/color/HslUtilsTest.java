@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 
 import static io.github.jinahya.w3.css.color.HslUtils.hslToRgb;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.within;
 import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -44,7 +45,7 @@ class HslUtilsTest {
     @MethodSource({"hslAndRgb"})
     @ParameterizedTest(name = "[{index}]: {0}, {1}%, {2}% -> {3}, {4}, {5}")
     void hslToRgb__(final double hue, final double saturation, final double lightness,
-                    final int red, final int green, final int blue) {
+                    final double red, final double green, final double blue) {
         final var array = hslToRgb(
                 hue,
                 saturation,
@@ -54,15 +55,15 @@ class HslUtilsTest {
         final var r = array[0];
         final var g = array[1];
         final var b = array[2];
-        assertThat(Math.round(r * RgbConstants.MAX_COMPONENT))
+        assertThat(r * RgbConstants.MAX_COMPONENT)
                 .as("r")
-                .isEqualTo(red);
-        assertThat(Math.round(g * RgbConstants.MAX_COMPONENT))
+                .isEqualTo(red, within(1.0));
+        assertThat(g * RgbConstants.MAX_COMPONENT)
                 .as("g")
-                .isEqualTo(green);
-        assertThat(Math.round(b * RgbConstants.MAX_COMPONENT))
+                .isEqualTo(green, within(1.0));
+        assertThat(b * RgbConstants.MAX_COMPONENT)
                 .as("b")
-                .isEqualTo(blue);
+                .isEqualTo(blue, within(1.0));
     }
 
     @MethodSource({"hslAndRgb"})
